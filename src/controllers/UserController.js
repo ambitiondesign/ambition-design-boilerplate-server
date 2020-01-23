@@ -15,12 +15,15 @@ class UserController {
 
     try {
       const user = await UserService.getUser(email);
+      if (!user) {
+        throw 'No account with that email has been found';
+      }
       user.password = undefined;
 
       util.setSuccess(200, 'User is successfully retrieved', user);
       return util.send(res);
     } catch (error) {
-      util.setError(404, error);
+      util.setError(400, error);
       return util.send(res);
     }
   }
@@ -32,16 +35,18 @@ class UserController {
       util.setError(400, 'Please input a valid value');
       return util.send(res);
     }
-
     try {
         const user = await UserService.getUser(email);
+        if (!user) {
+          throw 'No account with that email has been found';
+        }
         user.firstName = firstName;
         user.lastName = lastName;
         await UserService.updateUser(user);
         util.setSuccess(200, 'User is successfully updated.');
         return util.send(res);
     } catch (error) {
-      util.setError(404, error);
+      util.setError(400, error);
       return util.send(res);
     }
     

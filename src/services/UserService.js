@@ -12,11 +12,8 @@ class UserService {
         [user.email, passwordHash, user.firstName, user.lastName, date, date]
       ]
 
-      console.log(new Date());
       await db.beginTransaction();
-      
       const users = await db.query('SELECT * FROM `user` WHERE `email` = ?',[user.email]);
-      console.log(users);
       if (users.length > 0) {
         throw 'User already exists!!';
       }
@@ -24,8 +21,6 @@ class UserService {
       const result = await db.query(
         'INSERT INTO  `user` (email, password, first_name, last_name, updated, created) VALUES ?'
         , [records]);
-
-      console.log(result);
       user.id = result.insertId;
 
       const roleRecords = [
@@ -36,7 +31,7 @@ class UserService {
         , [roleRecords]);
 
       await db.commit();
-      return new User(user.id, user.email, undefined, user.firstName, user.lastName, ['user'], date, date);
+      return new User(user.id, user.email, undefined, user.firstName, user.lastName, ['user'], undefined, undefined, date, date);
     } catch (error) {
       await db.rollback();
       throw error;
@@ -115,6 +110,24 @@ class UserService {
         '`updated` = ? ' +
         'WHERE `email` = ?'
         , [user.firstName, user.lastName, passwordHash, user.resetPasswordToken, user.resetPasswordExpires, new Date(), user.email]);
+    } catch (error) {
+      throw error;
+    } finally {
+      await db.close();
+    }
+  }
+
+  static async updateUserResetToken(user) {
+    const db = makeDb();
+    try {
+      const passwordHash = await bcrypt.hash(user.password, 10);
+      await db.query(
+        'UPDATE `user` SET ' +
+        '`reset_password_token` = ?, ' +
+        '`reset_password_expires` = ?, ' +
+        '`updated` = ? ' +
+        'WHERE `email` = ?'
+        , [user.resetPasswordToken, user.resetPasswordExpires, new Date(), user.email]);
     } catch (error) {
       throw error;
     } finally {

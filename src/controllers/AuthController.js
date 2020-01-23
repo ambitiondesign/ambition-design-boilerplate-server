@@ -34,14 +34,12 @@ class AuthController {
       const { email, password } = req.body;
       const user = await UserService.getUser(email);
       if (!user) {
-        util.setError(401, 'Login failed! Check authentication credentials');
-        return util.send(res);
+        throw 'Login failed! Check authentication credentials';
       }
 
       const isPasswordMatch = await UserService.validatePassword(password, user.password)
       if (!isPasswordMatch) {
-        util.setError(401, 'Login failed! Check authentication credentials');
-        return util.send(res);
+        throw 'Login failed! Check authentication credentials';
       }
       user.password = undefined;
 
@@ -53,7 +51,7 @@ class AuthController {
   
       return util.send(res);
     } catch(error) {
-      util.setError(400, error);
+      util.setError(401, error);
       return util.send(res);
     }
   }
@@ -61,16 +59,18 @@ class AuthController {
   static async passwordChange(req, res) {
     try {
       const { email, currentPassword, newPassword, verifyPassword } = req.body;
+
       const user = await UserService.getUser(email);
       if (!user) {
-        util.setError(400, 'No account with that email has been found');
-        return util.send(res);
+        throw 'No account with that email has been found';
       }
 
       const isPasswordMatch = await UserService.validatePassword(currentPassword, user.password)
       if (!isPasswordMatch) {
-        util.setError(401, 'Current password is incorrect');
-        return util.send(res);
+        throw {
+          statusCode: 401,
+          message: 'Current password is incorrect.'
+        }
       }
 
       if (newPassword === verifyPassword) {
@@ -85,7 +85,11 @@ class AuthController {
         throw 'Passwords do not match';
       }
     } catch(error) {
-      util.setError(400, error);
+      if (error.statusCode) {
+        util.setError(error.statusCode, error.message);
+      } else {
+        util.setError(400, error);
+      }
       return util.send(res);
     }
   }
@@ -96,8 +100,7 @@ class AuthController {
       const { email } = req.body;
       const user = await UserService.getUser(email);
       if (!user) {
-        util.setError(400, 'No account with that email has been found');
-        return util.send(res);
+        throw 'No account with that email has been found';
       }
 
       //generating random reset token
@@ -113,7 +116,7 @@ class AuthController {
       user.resetPasswordToken = token;
       user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
 
-      await UserService.updateUser(user);
+      await UserService.updateUserResetToken(user);
 
       // send email
 
@@ -130,8 +133,7 @@ class AuthController {
       const { token } = req.params;
       const user = await UserService.getResetUser(token, new Date());
       if (!user) {
-        util.setError(400, 'Password reset token is invalid or has expired.');
-        return util.send(res);
+        throw 'Password reset token is invalid or has expired.';
       }
 
       util.setSuccess(200, 'Token was found successfully.');
@@ -147,8 +149,7 @@ class AuthController {
       const { newPassword, verifyPassword } = req.body;
       const user = await UserService.getResetUser(req.params.token, new Date());
       if (!user) {
-        util.setError(400, 'Password reset token is invalid or has expired.');
-        return util.send(res);
+        throw 'Password reset token is invalid or has expired.';
       }
       
       if (newPassword === verifyPassword) {

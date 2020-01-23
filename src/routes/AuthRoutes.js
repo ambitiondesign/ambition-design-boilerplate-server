@@ -9,7 +9,9 @@ router.post('/signin', AuthController.signin);
 
 router.post('/password', auth, AuthController.passwordChange);
 
-router.post('/reset/:token', AuthController.reset);
+router.post('/forgot', AuthController.forgot);
+
 router.get('/reset/:token', AuthController.validateResetToken);
+router.post('/reset/:token', AuthController.reset);
 
 export default router;

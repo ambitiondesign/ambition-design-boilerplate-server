@@ -10,6 +10,6 @@ const router = Router();
 // router.put('/:id', AudienceController.updateAudience);
 // router.delete('/:id', AudienceController.deleteAudience);
 router.get('/:email', auth, UserController.getUser);
-router.post('/:email', auth, UserController.updateUser);
+router.post('/', auth, UserController.updateUser);
 
 export default router;
